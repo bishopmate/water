@@ -1,72 +1,40 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "water"
-description = "A Python workflow orchestration framework"
-authors = [{name = "Water Contributors"}]
-license = {text = "MIT"}
+version = "0.1.0"
+description = "A workflow framework for Python"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
 readme = "README.md"
 requires-python = ">=3.8"
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: System :: Distributed Computing",
-]
-keywords = ["workflow", "orchestration", "async", "pipeline"]
 dependencies = [
-    "pydantic>=2.0.0,<3.0.0"
+    "pydantic>=2.0.0",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
 ]
-dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
-    "black>=23.0.0",
-    "ruff>=0.1.0",
-    "mypy>=1.0.0",
-    "pre-commit>=3.0.0",
+    "pytest-cov>=4.0.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/water-framework"
-Repository = "https://github.com/your-org/water-framework"
-Documentation = "https://water-framework.readthedocs.io"
-Changelog = "https://github.com/your-org/water-framework/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/manthanguptaa/water"
+Repository = "https://github.com/manthanguptaa/water"
 
-[tool.hatch.version]
-path = "water/__init__.py"
-
-[tool.hatch.build.targets.wheel]
-packages = ["water"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["water*"]
 
 [tool.pytest.ini_options]
-minversion = "7.0"
 testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 asyncio_mode = "auto"
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-]
-
-[tool.black]
-line-length = 88
-target-version = ['py38']
-
-[tool.ruff]
-line-length = 88
-target-version = "py38"
-
-[tool.mypy]
-python_version = "3.8"
-check_untyped_defs = true
-ignore_missing_imports = true

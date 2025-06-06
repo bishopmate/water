@@ -1,4 +1,5 @@
-from typing import Any, Callable, Optional, Dict
+from typing import Type, Callable, Optional, Dict
+from pydantic import BaseModel
 from water.exceptions import WaterError
 import inspect
 import uuid
@@ -13,8 +14,8 @@ if TYPE_CHECKING:
 class Task:
     def __init__(
         self, 
-        input_schema: Any,
-        output_schema: Any,
+        input_schema: Type[BaseModel],
+        output_schema: Type[BaseModel],
         execute: Callable[[Dict[str, InputData], 'ExecutionContext'], OutputData], 
         id: Optional[str] = None, 
         description: Optional[str] = None
@@ -22,11 +23,11 @@ class Task:
         self.id: str = id if id else f"task_{uuid.uuid4().hex[:8]}"
         self.description: str = description if description else f"Task {self.id}"
         
-        # Validate schemas
-        if not input_schema:
-            raise WaterError("Task must have an input schema")
-        if not output_schema:
-            raise WaterError("Task must have an output schema")
+        # Validate schemas are Pydantic BaseModel classes
+        if not input_schema or not (isinstance(input_schema, type) and issubclass(input_schema, BaseModel)):
+            raise WaterError("input_schema must be a Pydantic BaseModel class")
+        if not output_schema or not (isinstance(output_schema, type) and issubclass(output_schema, BaseModel)):
+            raise WaterError("output_schema must be a Pydantic BaseModel class")
         if not execute or not callable(execute):
             raise WaterError("Task must have a callable execute function")
         
@@ -38,8 +39,8 @@ class Task:
 def create_task(
     id: Optional[str] = None, 
     description: Optional[str] = None, 
-    input_schema: Optional[Any] = None, 
-    output_schema: Optional[Any] = None, 
+    input_schema: Optional[Type[BaseModel]] = None, 
+    output_schema: Optional[Type[BaseModel]] = None, 
     execute: Optional[Callable[[Dict[str, InputData], 'ExecutionContext'], OutputData]] = None
 ) -> Task:
     """Factory function to create a Task instance."""
