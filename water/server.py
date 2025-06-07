@@ -1,17 +1,17 @@
 from typing import List, Dict, Any, Optional, Type
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import uuid
 from datetime import datetime
 
 from water.flow import Flow
-from water.types import InputData, OutputData
 
-# Request/Response Models
+
 class RunFlowRequest(BaseModel):
+    """Request model for flow execution."""
     input_data: Dict[str, Any]
 
 class RunFlowResponse(BaseModel):
+    """Response model for flow execution results."""
     flow_id: str
     status: str
     result: Dict[str, Any]
@@ -19,31 +19,37 @@ class RunFlowResponse(BaseModel):
     timestamp: datetime
 
 class TaskInfo(BaseModel):
+    """Information about a task within a flow."""
     id: str
     description: str
     type: str  # "sequential", "parallel", "branch", "loop"
-    input_schema: Optional[Dict[str, Any]] = None
-    output_schema: Optional[Dict[str, Any]] = None
+    input_schema: Optional[Dict[str, str]] = None
+    output_schema: Optional[Dict[str, str]] = None
 
 class FlowSummary(BaseModel):
+    """Summary information about a flow."""
     id: str
     description: str
     tasks: List[TaskInfo]
 
 class FlowDetail(BaseModel):
+    """Detailed information about a flow."""
     id: str
     description: str
     metadata: Dict[str, Any]
     tasks: List[TaskInfo]
 
 class FlowsListResponse(BaseModel):
+    """Response model for listing flows."""
     flows: List[FlowSummary]
 
 class FlowServer:
     """
     FastAPI server for hosting Water flows.
     
-    Usage:
+    Provides REST endpoints for discovering and executing flows.
+    
+    Example:
         flows = [flow1, flow2, flow3]
         app = FlowServer(flows=flows).get_app()
         
@@ -52,14 +58,16 @@ class FlowServer:
             uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
     """
     
-    def __init__(self, flows: List[Flow]):
+    def __init__(self, flows: List[Flow]) -> None:
         """
         Initialize FlowServer with a list of flows.
         
         Args:
             flows: List of registered Flow instances
+            
+        Raises:
+            ValueError: If flows contain duplicates or unregistered flows
         """
-        # Index flows by ID and validate uniqueness
         self.flows: Dict[str, Flow] = {}
         for flow in flows:
             if flow.id in self.flows:
@@ -68,86 +76,57 @@ class FlowServer:
                 raise ValueError(f"Flow {flow.id} must be registered before adding to server")
             self.flows[flow.id] = flow
     
-    def _serialize_schema(self, schema_class: Type[BaseModel]) -> Optional[Dict[str, Any]]:
-        """Convert Pydantic model to a simple field:type mapping."""
-        if schema_class is None:
+    def _serialize_schema(self, schema_class: Type[BaseModel]) -> Optional[Dict[str, str]]:
+        """
+        Convert Pydantic model to a simple field:type mapping.
+        
+        Args:
+            schema_class: Pydantic BaseModel class
+            
+        Returns:
+            Dictionary mapping field names to simplified type strings, or None
+        """
+        if not schema_class:
             return None
         
         try:
             schema_dict = {}
             for field_name, field_info in schema_class.model_fields.items():
-                # Get the clean type name
-                field_type = self._get_clean_type_name(field_info.annotation)
-                schema_dict[field_name] = field_type
+                # Simple type mapping - much simpler than before
+                field_type = field_info.annotation
+                type_name = getattr(field_type, '__name__', str(field_type))
+                
+                # Basic type cleanup
+                if 'int' in type_name.lower():
+                    schema_dict[field_name] = "int"
+                elif 'float' in type_name.lower():
+                    schema_dict[field_name] = "float"
+                elif 'str' in type_name.lower():
+                    schema_dict[field_name] = "string"
+                elif 'bool' in type_name.lower():
+                    schema_dict[field_name] = "boolean"
+                elif 'list' in type_name.lower():
+                    schema_dict[field_name] = "array"
+                elif 'dict' in type_name.lower():
+                    schema_dict[field_name] = "object"
+                else:
+                    schema_dict[field_name] = type_name
             
             return schema_dict
             
-        except Exception as e:
-            return {"error": f"Could not parse schema: {str(e)}"}
-    
-    def _get_clean_type_name(self, field_type) -> str:
-        """Get a clean, readable type name."""
-        # Convert type to string and clean it up
-        type_str = str(field_type)
-        
-        # Handle common types
-        if field_type == int:
-            return "int"
-        elif field_type == float:
-            return "float"
-        elif field_type == str:
-            return "string"
-        elif field_type == bool:
-            return "boolean"
-        elif field_type == list:
-            return "array"
-        elif field_type == dict:
-            return "object"
-        
-        # Handle typing module types
-        if "typing." in type_str:
-            # Extract the base type name
-            if "List" in type_str:
-                return "array"
-            elif "Dict" in type_str:
-                return "object"
-            elif "Optional" in type_str:
-                # Extract the inner type from Optional[Type]
-                inner_type = type_str.replace("typing.Union[", "").replace("typing.Optional[", "").replace(", NoneType]", "").replace("]", "")
-                return self._get_clean_type_name_from_string(inner_type)
-        
-        # Handle class types (like custom Pydantic models)
-        if hasattr(field_type, '__name__'):
-            return field_type.__name__
-        
-        # Fallback: clean up the string representation
-        return self._get_clean_type_name_from_string(type_str)
-    
-    def _get_clean_type_name_from_string(self, type_str: str) -> str:
-        """Clean up type string representation."""
-        # Remove common prefixes
-        type_str = type_str.replace("<class '", "").replace("'>", "")
-        type_str = type_str.replace("typing.", "")
-        
-        # Handle basic types
-        if "int" in type_str.lower():
-            return "int"
-        elif "float" in type_str.lower():
-            return "float"
-        elif "str" in type_str.lower():
-            return "string"
-        elif "bool" in type_str.lower():
-            return "boolean"
-        elif "list" in type_str.lower():
-            return "array"
-        elif "dict" in type_str.lower():
-            return "object"
-        
-        # Return the cleaned string
-        return type_str.split(".")[-1] if "." in type_str else type_str
+        except Exception:
+            return {"error": "Could not parse schema"}
     
     def _extract_task_info(self, execution_nodes: List[Dict[str, Any]]) -> List[TaskInfo]:
-        """Extract task information from execution nodes."""
+        """
+        Extract task information from execution nodes.
+        
+        Args:
+            execution_nodes: List of execution node dictionaries
+            
+        Returns:
+            List of TaskInfo objects
+        """
         task_infos = []
         
         for node in execution_nodes:
@@ -197,7 +176,12 @@ class FlowServer:
         return task_infos
     
     def get_app(self) -> FastAPI:
-        """Create and configure the FastAPI application."""
+        """
+        Create and configure the FastAPI application.
+        
+        Returns:
+            Configured FastAPI application instance
+        """
         app = FastAPI(
             title="Water Flows API",
             description="REST API for executing Water framework workflows",
@@ -214,16 +198,15 @@ class FlowServer:
             allow_headers=["*"],
         )
         
-        # Health check endpoint
         @app.get("/health")
         async def health_check():
+            """Health check endpoint."""
             return {
                 "status": "healthy",
                 "flows_count": len(self.flows),
                 "timestamp": datetime.utcnow().isoformat()
             }
         
-        # List all flows
         @app.get("/flows", response_model=FlowsListResponse)
         async def list_flows():
             """Get list of all available flows."""
@@ -238,7 +221,6 @@ class FlowServer:
             
             return FlowsListResponse(flows=flows_summary)
         
-        # Get specific flow details
         @app.get("/flows/{flow_id}", response_model=FlowDetail)
         async def get_flow_details(flow_id: str):
             """Get detailed information about a specific flow."""
@@ -255,7 +237,6 @@ class FlowServer:
                 tasks=task_infos,
             )
         
-        # Execute a flow
         @app.post("/flows/{flow_id}/run", response_model=RunFlowResponse)
         async def run_flow(flow_id: str, request: RunFlowRequest):
             """Execute a specific flow with input data."""

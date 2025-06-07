@@ -1,5 +1,5 @@
-from .task import Task, create_task
 from .flow import Flow
+from .task import create_task, Task
 from .server import FlowServer
 
-__all__ = ["Task", "create_task", "Flow", "FlowServer"]
+__all__ = ["Flow", "create_task", "Task", "FlowServer"]
