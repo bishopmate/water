@@ -3,11 +3,50 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "water"
+name = "water-ai"
 version = "0.1.0"
-description = "A workflow framework for Python"
+description = "A multi-agent orchestration framework that works with any agent framework"
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Manthan Gupta", email = "manthangupta109@gmail.com"}
+]
+keywords = [
+  "water-ai",
+  "multi-agent",
+  "orchestration", 
+  "llm",
+  "large-language-model",
+  "framework",
+  "agents",
+  "ai-agents", 
+  "workflow",
+  "pipeline",
+  "langchain",
+  "crewai",
+  "agno",
+  "autogen",
+  "distributed",
+  "async",
+  "coordination",
+  "agent-framework",
+  "multi-agent-systems"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research", 
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9", 
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+    "Framework :: FastAPI",
+    "Framework :: AsyncIO",
 ]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -30,6 +69,7 @@ Repository = "https://github.com/manthanguptaa/water"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["water*"]
+exclude = ["tests*", "cookbook*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
