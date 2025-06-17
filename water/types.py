@@ -1,5 +1,6 @@
 from typing import Any, Callable, Dict, List, Union
 from typing_extensions import TypedDict
+from water.task import Task
 
 # Forward declaration for ExecutionContext
 from typing import TYPE_CHECKING
@@ -17,15 +18,15 @@ TaskExecuteFunction = Callable[[Dict[str, InputData], 'ExecutionContext'], Outpu
 # TypedDict definitions for node structures
 class SequentialNode(TypedDict):
     type: str
-    task: Any  # Will be Task when we import it
+    task: Task
 
 class ParallelNode(TypedDict):
     type: str
-    tasks: List[Any]  # Will be List[Task]
+    tasks: List[Task]
 
 class BranchCondition(TypedDict):
     condition: ConditionFunction
-    task: Any  # Will be Task
+    task: Task
 
 class BranchNode(TypedDict):
     type: str
@@ -34,7 +35,7 @@ class BranchNode(TypedDict):
 class LoopNode(TypedDict):
     type: str
     condition: ConditionFunction
-    task: Any  # Will be Task
+    task: Task
     max_iterations: int
 
 # Union type for all node types
